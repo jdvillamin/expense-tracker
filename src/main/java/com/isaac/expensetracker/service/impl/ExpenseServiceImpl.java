@@ -2,6 +2,7 @@ package com.isaac.expensetracker.service.impl;
 
 import com.isaac.expensetracker.dto.ExpenseRequest;
 import com.isaac.expensetracker.dto.ExpenseResponse;
+import com.isaac.expensetracker.exception.ExpenseNotFoundException;
 import com.isaac.expensetracker.model.Expense;
 import com.isaac.expensetracker.service.ExpenseService;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,17 @@ public class ExpenseServiceImpl implements ExpenseService {
         return expenses.values().stream()
                 .map(this::buildResponse)
                 .toList();
+    }
+
+    @Override
+    public ExpenseResponse getExpenseById(Long id) {
+        Expense expense = expenses.get(id);
+
+        if (expense == null) {
+            throw new ExpenseNotFoundException("Expense not found with ID: " + id);
+        }
+
+        return buildResponse(expense);
     }
 
     private ExpenseResponse buildResponse(Expense expense) {

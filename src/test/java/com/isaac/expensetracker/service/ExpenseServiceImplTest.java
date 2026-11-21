@@ -2,6 +2,7 @@ package com.isaac.expensetracker.service;
 
 import com.isaac.expensetracker.dto.ExpenseRequest;
 import com.isaac.expensetracker.dto.ExpenseResponse;
+import com.isaac.expensetracker.exception.ExpenseNotFoundException;
 import com.isaac.expensetracker.model.ExpenseCategory;
 
 import com.isaac.expensetracker.service.impl.ExpenseServiceImpl;
@@ -44,15 +45,8 @@ public class ExpenseServiceImplTest {
         // Then
         assertNotNull(response);
         assertNotNull(response.getId());
-
-        assertEquals(request.getDescription(), response.getDescription());
-        assertEquals(request.getAmount(), response.getAmount());
-        assertEquals(request.getCategory(), response.getCategory());
-        assertEquals(request.getExpenseDate(), response.getExpenseDate());
-
-        assertNotNull(response.getCreatedAt());
-        assertNotNull(response.getUpdatedAt());
-        assertEquals(response.getCreatedAt(), response.getUpdatedAt());
+        assertExpenseMatchesRequest(request, response);
+        assertTimestampsInitialized(response);
     }
 
     @Test
@@ -117,24 +111,53 @@ public class ExpenseServiceImplTest {
         // When
         ExpenseResponse response1 = expenseService.createExpense(request1);
         ExpenseResponse response2 = expenseService.createExpense(request2);
-        List<ExpenseResponse> getAllResponse = expenseService.getAllExpenses();
+        List<ExpenseResponse> responses = expenseService.getAllExpenses();
 
         // Then
-        assertNotNull(getAllResponse);
-        assertEquals(2, getAllResponse.size());
+        assertNotNull(responses);
+        assertEquals(2, responses.size());
 
-        ExpenseResponse actual1 = getAllResponse.stream()
+        ExpenseResponse actual1 = responses.stream()
                 .filter(e -> e.getId().equals(response1.getId()))
                 .findFirst()
                 .orElseThrow();
 
-        ExpenseResponse actual2 = getAllResponse.stream()
+        ExpenseResponse actual2 = responses.stream()
                 .filter(e -> e.getId().equals(response2.getId()))
                 .findFirst()
                 .orElseThrow();
 
-        matchResponses(response1, actual1);
-        matchResponses(response2, actual2);
+        assertExpenseEquals(response1, actual1);
+        assertExpenseEquals(response2, actual2);
+    }
+
+    @Test
+    @DisplayName("Get expense by ID should return expense")
+    void getExpenseById_shouldReturnExpense() {
+        // Given
+        ExpenseRequest request = createValidRequest(
+                "Chicken Lunch",
+                new BigDecimal("155.00"),
+                ExpenseCategory.FOOD,
+                LocalDate.of(2026, 10, 13)
+        );
+
+        // When
+        ExpenseResponse expected = expenseService.createExpense(request);
+        ExpenseResponse actual = expenseService.getExpenseById(expected.getId());
+
+        // Then
+        assertExpenseEquals(expected, actual);
+    }
+
+    @Test
+    @DisplayName("Get expense by ID when not found should throw not found exception")
+    void getExpenseById_whenNotFound_shouldThrowNotFoundException() {
+        // Given
+        Long nonExistingId = 999L;
+
+        // When/Then
+        assertThrows(ExpenseNotFoundException.class, () -> expenseService.getExpenseById(nonExistingId));
     }
 
     private ExpenseRequest createValidRequest(
@@ -151,20 +174,37 @@ public class ExpenseServiceImplTest {
                 .build();
     }
 
-    private void matchResponses(
-            ExpenseResponse expectedResponse,
-            ExpenseResponse testResponse
+    private void assertExpenseMatchesRequest(
+            ExpenseRequest expected,
+            ExpenseResponse actual
     ) {
-        assertNotNull(expectedResponse);
-        assertNotNull(testResponse);
-        assertNotNull(testResponse.getId());
-        assertNotNull(testResponse.getCreatedAt());
-        assertNotNull(testResponse.getUpdatedAt());
-        assertEquals(testResponse.getCreatedAt(), testResponse.getUpdatedAt());
+        assertNotNull(actual);
 
-        assertEquals(expectedResponse.getDescription(), testResponse.getDescription());
-        assertEquals(expectedResponse.getAmount(), testResponse.getAmount());
-        assertEquals(expectedResponse.getCategory(), testResponse.getCategory());
-        assertEquals(expectedResponse.getExpenseDate(), testResponse.getExpenseDate());
+        assertEquals(expected.getDescription(), actual.getDescription());
+        assertEquals(expected.getAmount(), actual.getAmount());
+        assertEquals(expected.getCategory(), actual.getCategory());
+        assertEquals(expected.getExpenseDate(), actual.getExpenseDate());
+    }
+
+    private void assertExpenseEquals(
+            ExpenseResponse expected,
+            ExpenseResponse actual
+    ) {
+        assertNotNull(actual);
+
+        assertEquals(expected.getId(), actual.getId());
+        assertEquals(expected.getDescription(), actual.getDescription());
+        assertEquals(expected.getAmount(), actual.getAmount());
+        assertEquals(expected.getCategory(), actual.getCategory());
+        assertEquals(expected.getExpenseDate(), actual.getExpenseDate());
+        assertEquals(expected.getCreatedAt(), actual.getCreatedAt());
+        assertEquals(expected.getUpdatedAt(), actual.getUpdatedAt());
+    }
+
+    private void assertTimestampsInitialized(ExpenseResponse response) {
+        assertNotNull(response.getCreatedAt());
+        assertNotNull(response.getUpdatedAt());
+
+        assertEquals(response.getCreatedAt(), response.getUpdatedAt());
     }
 }
