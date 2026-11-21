@@ -134,4 +134,106 @@ public class ExpenseControllerTest {
 
         verify(expenseService, times(1)).getAllExpenses();
     }
+
+    @Test
+    @DisplayName("Create expense with blank description should return bad request")
+    void createExpense_withBlankDescription_shouldReturnBadRequest() throws Exception {
+        String jsonRequest = """
+                {
+                    "description": "",
+                    "amount": "4000.00",
+                    "category": "ITEMS",
+                    "expenseDate": "2026-11-21"
+                }
+                """;
+
+        mockMvc.perform(
+                        post("/api/expenses")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                .andExpect(status().isBadRequest());
+
+        verify(expenseService, never()).createExpense(any(ExpenseRequest.class));
+    }
+
+    @Test
+    @DisplayName("Create expense with null amount should return bad request")
+    void createExpense_withNullAmount_shouldReturnBadRequest() throws Exception {
+        String jsonRequest = """
+                {
+                    "description": "GF Gift",
+                    "category": "ITEMS",
+                    "expenseDate": "2026-11-21"
+                }
+                """;
+
+        mockMvc.perform(
+                        post("/api/expenses")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                .andExpect(status().isBadRequest());
+
+        verify(expenseService, never()).createExpense(any(ExpenseRequest.class));
+    }
+
+    @Test
+    @DisplayName("Create expense with amount below minimum should return bad request")
+    void createExpense_withAmountBelowMinimum_shouldReturnBadRequest() throws Exception {
+        String jsonRequest = """
+                {
+                    "description": "GF Gift",
+                    "amount": "0.00",
+                    "category": "ITEMS",
+                    "expenseDate": "2026-11-21"
+                }
+                """;
+
+        mockMvc.perform(
+                        post("/api/expenses")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                .andExpect(status().isBadRequest());
+
+        verify(expenseService, never()).createExpense(any(ExpenseRequest.class));
+    }
+
+    @Test
+    @DisplayName("Create expense with missing category should return bad request")
+    void createExpense_withMissingCategory_shouldReturnBadRequest() throws Exception {
+        String jsonRequest = """
+                {
+                    "description": "GF Gift",
+                    "amount": "4000.00",
+                    "expenseDate": "2026-11-21"
+                }
+                """;
+
+        mockMvc.perform(
+                        post("/api/expenses")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                .andExpect(status().isBadRequest());
+
+        verify(expenseService, never()).createExpense(any(ExpenseRequest.class));
+    }
+
+    @Test
+    @DisplayName("Create expense with missing expense date should return bad request")
+    void createExpense_withExpenseDate_shouldReturnBadRequest() throws Exception {
+        String jsonRequest = """
+                {
+                    "description": "GF Gift",
+                    "amount": "4000.00",
+                    "category": "ITEMS"
+                }
+                """;
+
+        mockMvc.perform(
+                        post("/api/expenses")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                .andExpect(status().isBadRequest());
+
+        verify(expenseService, never()).createExpense(any(ExpenseRequest.class));
+    }
 }
