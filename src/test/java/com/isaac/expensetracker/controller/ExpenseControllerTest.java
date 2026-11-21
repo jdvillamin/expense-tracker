@@ -1,7 +1,8 @@
 package com.isaac.expensetracker.controller;
 
-import com.isaac.expensetracker.dto.ExpenseRequest;
+import com.isaac.expensetracker.dto.CreateExpenseRequest;
 import com.isaac.expensetracker.dto.ExpenseResponse;
+import com.isaac.expensetracker.dto.UpdateExpenseRequest;
 import com.isaac.expensetracker.exception.ExpenseNotFoundException;
 import com.isaac.expensetracker.model.ExpenseCategory;
 import com.isaac.expensetracker.service.ExpenseService;
@@ -20,8 +21,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,7 +48,7 @@ public class ExpenseControllerTest {
                 }
                 """;
 
-        ExpenseResponse expectedResponse = ExpenseResponse.builder()
+        ExpenseResponse expectedExpense = ExpenseResponse.builder()
                 .id(1L)
                 .description("Balibago to BGC Bus")
                 .amount(new BigDecimal("122.00"))
@@ -58,7 +58,7 @@ public class ExpenseControllerTest {
                 .updatedAt(Instant.parse("2026-10-18T10:00:00Z"))
                 .build();
 
-        when(expenseService.createExpense(any(ExpenseRequest.class))).thenReturn(expectedResponse);
+        when(expenseService.createExpense(any(CreateExpenseRequest.class))).thenReturn(expectedExpense);
 
         // When/Then
         mockMvc.perform(
@@ -67,21 +67,21 @@ public class ExpenseControllerTest {
                                 .content(jsonRequest))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id")
-                        .value(expectedResponse.getId().intValue()))
+                        .value(expectedExpense.getId().intValue()))
                 .andExpect(jsonPath("$.description")
-                        .value(expectedResponse.getDescription()))
+                        .value(expectedExpense.getDescription()))
                 .andExpect(jsonPath("$.amount")
-                        .value(expectedResponse.getAmount().doubleValue()))
+                        .value(expectedExpense.getAmount().doubleValue()))
                 .andExpect(jsonPath("$.category")
-                        .value(expectedResponse.getCategory().name()))
+                        .value(expectedExpense.getCategory().name()))
                 .andExpect(jsonPath("$.expenseDate")
-                        .value(expectedResponse.getExpenseDate().toString()))
+                        .value(expectedExpense.getExpenseDate().toString()))
                 .andExpect(jsonPath("$.createdAt")
-                        .value(expectedResponse.getCreatedAt().toString()))
+                        .value(expectedExpense.getCreatedAt().toString()))
                 .andExpect(jsonPath("$.updatedAt")
-                        .value(expectedResponse.getUpdatedAt().toString()));
+                        .value(expectedExpense.getUpdatedAt().toString()));
 
-        verify(expenseService).createExpense(any(ExpenseRequest.class));
+        verify(expenseService).createExpense(any(CreateExpenseRequest.class));
     }
 
     @Test
@@ -143,14 +143,14 @@ public class ExpenseControllerTest {
                 .andExpect(jsonPath("$[1].expenseDate")
                         .value(expense2.getExpenseDate().toString()));
 
-        verify(expenseService, times(1)).getAllExpenses();
+        verify(expenseService).getAllExpenses();
     }
 
     @Test
     @DisplayName("Get expense by ID should return ok")
     void getExpenseById_shouldReturnOk() throws Exception {
         // Given
-        ExpenseResponse expense = ExpenseResponse.builder()
+        ExpenseResponse expectedExpense = ExpenseResponse.builder()
                 .id(1L)
                 .description("Balibago to BGC Bus")
                 .amount(new BigDecimal("122.00"))
@@ -160,28 +160,28 @@ public class ExpenseControllerTest {
                 .updatedAt(Instant.parse("2026-10-18T10:00:00Z"))
                 .build();
 
-        when(expenseService.getExpenseById(eq(expense.getId()))).thenReturn(expense);
+        when(expenseService.getExpenseById(eq(expectedExpense.getId()))).thenReturn(expectedExpense);
 
         // When/Then
         mockMvc.perform(
-                        get("/api/expenses/{id}", expense.getId().intValue()))
+                        get("/api/expenses/{id}", expectedExpense.getId().intValue()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id")
-                        .value(expense.getId().intValue()))
+                        .value(expectedExpense.getId().intValue()))
                 .andExpect(jsonPath("$.description")
-                        .value(expense.getDescription()))
+                        .value(expectedExpense.getDescription()))
                 .andExpect(jsonPath("$.amount")
-                        .value(expense.getAmount().doubleValue()))
+                        .value(expectedExpense.getAmount().doubleValue()))
                 .andExpect(jsonPath("$.category")
-                        .value(expense.getCategory().name()))
+                        .value(expectedExpense.getCategory().name()))
                 .andExpect(jsonPath("$.expenseDate")
-                        .value(expense.getExpenseDate().toString()))
+                        .value(expectedExpense.getExpenseDate().toString()))
                 .andExpect(jsonPath("$.createdAt")
-                        .value(expense.getCreatedAt().toString()))
+                        .value(expectedExpense.getCreatedAt().toString()))
                 .andExpect(jsonPath("$.updatedAt")
-                        .value(expense.getUpdatedAt().toString()));
+                        .value(expectedExpense.getUpdatedAt().toString()));
 
-        verify(expenseService, times(1)).getExpenseById(eq(expense.getId()));
+        verify(expenseService).getExpenseById(eq(expectedExpense.getId()));
     }
 
     @Test
@@ -198,7 +198,84 @@ public class ExpenseControllerTest {
                         get("/api/expenses/{id}", nonExistingId))
                 .andExpect(status().isNotFound());
 
-        verify(expenseService, times(1)).getExpenseById(eq(nonExistingId));
+        verify(expenseService).getExpenseById(eq(nonExistingId));
+    }
+
+    @Test
+    @DisplayName("Update expense should return ok")
+    void updateExpense_shouldReturnOk() throws Exception {
+        // Given
+        String jsonRequest = """
+                {
+                    "description": "Balibago to BGC Bus",
+                    "amount": 122.00,
+                    "category": "TRANSPORTATION",
+                    "expenseDate": "2026-10-18"
+                }
+                """;
+
+        ExpenseResponse expectedExpense = ExpenseResponse.builder()
+                .id(1L)
+                .description("Balibago to BGC Bus")
+                .amount(new BigDecimal("122.00"))
+                .category(ExpenseCategory.TRANSPORTATION)
+                .expenseDate(LocalDate.of(2026, 10, 18))
+                .createdAt(Instant.parse("2026-10-18T10:00:00Z"))
+                .updatedAt(Instant.parse("2026-10-18T10:00:00Z"))
+                .build();
+
+        when(expenseService.updateExpense(eq(expectedExpense.getId()), any(UpdateExpenseRequest.class)))
+                .thenReturn(expectedExpense);
+
+        // When/Then
+        mockMvc.perform(
+                        put("/api/expenses/{id}", expectedExpense.getId().intValue())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id")
+                        .value(expectedExpense.getId().intValue()))
+                .andExpect(jsonPath("$.description")
+                        .value(expectedExpense.getDescription()))
+                .andExpect(jsonPath("$.amount")
+                        .value(expectedExpense.getAmount().doubleValue()))
+                .andExpect(jsonPath("$.category")
+                        .value(expectedExpense.getCategory().name()))
+                .andExpect(jsonPath("$.expenseDate")
+                        .value(expectedExpense.getExpenseDate().toString()))
+                .andExpect(jsonPath("$.createdAt")
+                        .value(expectedExpense.getCreatedAt().toString()))
+                .andExpect(jsonPath("$.updatedAt")
+                        .value(expectedExpense.getUpdatedAt().toString()));
+
+        verify(expenseService).updateExpense(eq(expectedExpense.getId()), any(UpdateExpenseRequest.class));
+    }
+
+    @Test
+    @DisplayName("Update expense when not found should return not found")
+    void updateExpense_whenNotFound_shouldReturnNotFound() throws Exception {
+        // Given
+        Long nonExistingId = 999L;
+        String jsonRequest = """
+                {
+                    "description": "Balibago to BGC Bus",
+                    "amount": 122.00,
+                    "category": "TRANSPORTATION",
+                    "expenseDate": "2026-10-18"
+                }
+                """;
+
+        when(expenseService.updateExpense(eq(nonExistingId), any(UpdateExpenseRequest.class)))
+                .thenThrow(new ExpenseNotFoundException("Expense not found with ID: " + nonExistingId));
+
+        // When/Then
+        mockMvc.perform(
+                        put("/api/expenses/{id}", nonExistingId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                .andExpect(status().isNotFound());
+
+        verify(expenseService).updateExpense(eq(nonExistingId), any(UpdateExpenseRequest.class));
     }
 
     @Test
@@ -221,7 +298,7 @@ public class ExpenseControllerTest {
                                 .content(jsonRequest))
                 .andExpect(status().isBadRequest());
 
-        verify(expenseService, never()).createExpense(any(ExpenseRequest.class));
+        verify(expenseService, never()).createExpense(any(CreateExpenseRequest.class));
     }
 
     @Test
@@ -243,7 +320,7 @@ public class ExpenseControllerTest {
                                 .content(jsonRequest))
                 .andExpect(status().isBadRequest());
 
-        verify(expenseService, never()).createExpense(any(ExpenseRequest.class));
+        verify(expenseService, never()).createExpense(any(CreateExpenseRequest.class));
     }
 
     @Test
@@ -266,7 +343,7 @@ public class ExpenseControllerTest {
                                 .content(jsonRequest))
                 .andExpect(status().isBadRequest());
 
-        verify(expenseService, never()).createExpense(any(ExpenseRequest.class));
+        verify(expenseService, never()).createExpense(any(CreateExpenseRequest.class));
     }
 
     @Test
@@ -288,12 +365,35 @@ public class ExpenseControllerTest {
                                 .content(jsonRequest))
                 .andExpect(status().isBadRequest());
 
-        verify(expenseService, never()).createExpense(any(ExpenseRequest.class));
+        verify(expenseService, never()).createExpense(any(CreateExpenseRequest.class));
+    }
+
+    @Test
+    @DisplayName("Create expense with invalid category should return bad request")
+    void createExpense_withInvalidCategory_shouldReturnBadRequest() throws Exception {
+        // Given
+        String jsonRequest = """
+                {
+                    "description": "GF Gift",
+                    "amount": "4000.00",
+                    "category": "NON_EXISTING",
+                    "expenseDate": "2026-11-21"
+                }
+                """;
+
+        // When/Then
+        mockMvc.perform(
+                        post("/api/expenses")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                .andExpect(status().isBadRequest());
+
+        verify(expenseService, never()).createExpense(any(CreateExpenseRequest.class));
     }
 
     @Test
     @DisplayName("Create expense with missing expense date should return bad request")
-    void createExpense_withExpenseDate_shouldReturnBadRequest() throws Exception {
+    void createExpense_withMissingExpenseDate_shouldReturnBadRequest() throws Exception {
         // Given
         String jsonRequest = """
                 {
@@ -310,6 +410,123 @@ public class ExpenseControllerTest {
                                 .content(jsonRequest))
                 .andExpect(status().isBadRequest());
 
-        verify(expenseService, never()).createExpense(any(ExpenseRequest.class));
+        verify(expenseService, never()).createExpense(any(CreateExpenseRequest.class));
+    }
+
+    @Test
+    @DisplayName("Update expense with null amount should return bad request")
+    void updateExpense_withNullAmount_shouldReturnBadRequest() throws Exception {
+        // Given
+        Long id = 1L;
+        String jsonRequest = """
+                {
+                    "description": "GF Gift",
+                    "category": "ITEMS",
+                    "expenseDate": "2026-11-21"
+                }
+                """;
+
+        // When/Then
+        mockMvc.perform(
+                        put("/api/expenses/{id}", id)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                .andExpect(status().isBadRequest());
+
+        verify(expenseService, never()).updateExpense(eq(id), any(UpdateExpenseRequest.class));
+    }
+
+    @Test
+    @DisplayName("Update expense with amount below minimum should return bad request")
+    void updateExpense_withAmountBelowMinimum_shouldReturnBadRequest() throws Exception {
+        // Given
+        Long id = 1L;
+        String jsonRequest = """
+                {
+                    "description": "GF Gift",
+                    "amount": "0.00",
+                    "category": "ITEMS",
+                    "expenseDate": "2026-11-21"
+                }
+                """;
+
+        // When/Then
+        mockMvc.perform(
+                        put("/api/expenses/{id}", id)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                .andExpect(status().isBadRequest());
+
+        verify(expenseService, never()).updateExpense(eq(id), any(UpdateExpenseRequest.class));
+    }
+
+    @Test
+    @DisplayName("Update expense with missing category should return bad request")
+    void updateExpense_withMissingCategory_shouldReturnBadRequest() throws Exception {
+        // Given
+        Long id = 1L;
+        String jsonRequest = """
+                {
+                    "description": "GF Gift",
+                    "amount": "4000.00",
+                    "expenseDate": "2026-11-21"
+                }
+                """;
+
+        // When/Then
+        mockMvc.perform(
+                        put("/api/expenses/{id}", id)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                .andExpect(status().isBadRequest());
+
+        verify(expenseService, never()).updateExpense(eq(id), any(UpdateExpenseRequest.class));
+    }
+
+    @Test
+    @DisplayName("Update expense with invalid category should return bad request")
+    void updateExpense_withInvalidCategory_shouldReturnBadRequest() throws Exception {
+        // Given
+        Long id = 1L;
+        String jsonRequest = """
+                {
+                    "description": "GF Gift",
+                    "amount": "4000.00",
+                    "category": "NON_EXISTING",
+                    "expenseDate": "2026-11-21"
+                }
+                """;
+
+        // When/Then
+        mockMvc.perform(
+                        put("/api/expenses/{id}", id)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                .andExpect(status().isBadRequest());
+
+        verify(expenseService, never()).updateExpense(eq(id), any(UpdateExpenseRequest.class));
+    }
+
+    @Test
+    @DisplayName("Update expense with missing expense date should return bad request")
+    void updateExpense_withMissingExpenseDate_shouldReturnBadRequest() throws Exception {
+        // Given
+        Long id = 1L;
+        String jsonRequest = """
+                {
+                    "description": "GF Gift",
+                    "amount": "4000.00",
+                    "category": "ITEMS"
+                }
+                """;
+
+        // When/Then
+        mockMvc.perform(
+                        put("/api/expenses/{id}", id)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonRequest))
+                .andExpect(status().isBadRequest());
+
+        verify(expenseService, never()).updateExpense(eq(id), any(UpdateExpenseRequest.class));
     }
 }

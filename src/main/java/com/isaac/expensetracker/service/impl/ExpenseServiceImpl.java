@@ -1,7 +1,8 @@
 package com.isaac.expensetracker.service.impl;
 
-import com.isaac.expensetracker.dto.ExpenseRequest;
+import com.isaac.expensetracker.dto.CreateExpenseRequest;
 import com.isaac.expensetracker.dto.ExpenseResponse;
+import com.isaac.expensetracker.dto.UpdateExpenseRequest;
 import com.isaac.expensetracker.exception.ExpenseNotFoundException;
 import com.isaac.expensetracker.model.Expense;
 import com.isaac.expensetracker.service.ExpenseService;
@@ -21,7 +22,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     private final Map<Long, Expense> expenses = new ConcurrentHashMap<>();
 
     @Override
-    public ExpenseResponse createExpense(ExpenseRequest request) {
+    public ExpenseResponse createExpense(CreateExpenseRequest request) {
         Long id = expenseCount.incrementAndGet();
         Instant now = Instant.now();
 
@@ -56,6 +57,29 @@ public class ExpenseServiceImpl implements ExpenseService {
         }
 
         return buildResponse(expense);
+    }
+
+    @Override
+    public ExpenseResponse updateExpense(Long id, UpdateExpenseRequest request) {
+        Expense original = expenses.get(id);
+
+        if (original == null) {
+            throw new ExpenseNotFoundException("Expense not found with ID: " + id);
+        }
+
+        Expense updated = Expense.builder()
+                .id(original.getId())
+                .description(request.getDescription())
+                .amount(request.getAmount())
+                .category(request.getCategory())
+                .expenseDate(request.getExpenseDate())
+                .createdAt(original.getCreatedAt())
+                .updatedAt(Instant.now())
+                .build();
+
+        expenses.put(id, updated);
+
+        return buildResponse(updated);
     }
 
     private ExpenseResponse buildResponse(Expense expense) {

@@ -14,7 +14,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExpenseRequest {
+public class CreateExpenseRequest {
 
     @NotBlank
     private String description;
