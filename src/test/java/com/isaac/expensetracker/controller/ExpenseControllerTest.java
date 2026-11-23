@@ -279,6 +279,39 @@ public class ExpenseControllerTest {
     }
 
     @Test
+    @DisplayName("Delete expense should return no content")
+    void deleteExpense_shouldReturnNoContent() throws Exception {
+        // Given
+        Long id = 1L;
+
+        doNothing().when(expenseService).deleteExpense(id);
+
+        // When/Then
+        mockMvc.perform(
+                        delete("/api/expenses/{id}", id))
+                .andExpect(status().isNoContent());
+
+        verify(expenseService).deleteExpense(eq(id));
+    }
+
+    @Test
+    @DisplayName("Delete expense when not found should return not found")
+    void deleteExpense_whenNotFound_shouldReturnNotFound() throws Exception {
+        // Given
+        Long nonExistingId = 999L;
+
+        doThrow(new ExpenseNotFoundException("Expense not found using ID: " + nonExistingId))
+                .when(expenseService).deleteExpense(nonExistingId);
+
+        // When/Then
+        mockMvc.perform(
+                        delete("/api/expenses/{id}", nonExistingId))
+                .andExpect(status().isNotFound());
+
+        verify(expenseService).deleteExpense(nonExistingId);
+    }
+
+    @Test
     @DisplayName("Create expense with blank description should return bad request")
     void createExpense_withBlankDescription_shouldReturnBadRequest() throws Exception {
         // Given

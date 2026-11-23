@@ -82,6 +82,15 @@ public class ExpenseServiceImpl implements ExpenseService {
         return buildResponse(updated);
     }
 
+    @Override
+    public void deleteExpense(Long id) {
+        Expense removed = expenses.remove(id);
+
+        if (removed == null) {
+            throw new ExpenseNotFoundException("Expense not found with ID: " + id);
+        }
+    }
+
     private ExpenseResponse buildResponse(Expense expense) {
         return ExpenseResponse.builder()
                 .id(expense.getId())

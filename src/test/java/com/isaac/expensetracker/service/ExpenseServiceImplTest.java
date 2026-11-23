@@ -212,6 +212,36 @@ public class ExpenseServiceImplTest {
         assertThrows(ExpenseNotFoundException.class, () -> expenseService.updateExpense(nonExistingId, updateRequest));
     }
 
+    @Test
+    @DisplayName("Delete expense should remove expense")
+    void deleteExpense_shouldRemoveExpense() {
+        // Given
+        CreateExpenseRequest request = createValidCreateExpenseRequest(
+                "Chicken Lunch",
+                new BigDecimal("155.00"),
+                ExpenseCategory.FOOD,
+                LocalDate.of(2026, 11, 23)
+        );
+
+        // When
+        ExpenseResponse response = expenseService.createExpense(request);
+        Long id = response.getId();
+        expenseService.deleteExpense(id);
+
+        // Then
+        assertThrows(ExpenseNotFoundException.class, () -> expenseService.getExpenseById(id));
+    }
+
+    @Test
+    @DisplayName("Delete expense when not found should throw not found exception")
+    void deleteExpense_whenNotFound_shouldThrowNotFoundException() {
+        // Given
+        Long nonExistingId = 999L;
+
+        // When/Then
+        assertThrows(ExpenseNotFoundException.class, () -> expenseService.deleteExpense(nonExistingId));
+    }
+
     private CreateExpenseRequest createValidCreateExpenseRequest(
             String description,
             BigDecimal amount,
