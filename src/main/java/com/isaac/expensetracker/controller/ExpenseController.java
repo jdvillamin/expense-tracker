@@ -1,0 +1,53 @@
+package com.isaac.expensetracker.controller;
+
+import com.isaac.expensetracker.dto.CreateExpenseRequest;
+import com.isaac.expensetracker.dto.ExpenseResponse;
+import com.isaac.expensetracker.dto.UpdateExpenseRequest;
+import com.isaac.expensetracker.service.ExpenseService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/expenses")
+public class ExpenseController {
+
+    private final ExpenseService expenseService;
+
+    public ExpenseController(ExpenseService expenseService) {
+        this.expenseService = expenseService;
+    }
+
+    @PostMapping
+    public ResponseEntity<ExpenseResponse> createExpense(@Valid @RequestBody CreateExpenseRequest request) {
+        ExpenseResponse response = expenseService.createExpense(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ExpenseResponse>> getAllExpenses() {
+        List<ExpenseResponse> response = expenseService.getAllExpenses();
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ExpenseResponse> getExpenseById(@PathVariable Long id) {
+        ExpenseResponse response = expenseService.getExpenseById(id);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ExpenseResponse> updateExpense(@PathVariable Long id, @Valid @RequestBody UpdateExpenseRequest request) {
+        ExpenseResponse response = expenseService.updateExpense(id, request);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteExpense(@PathVariable Long id) {
+        expenseService.deleteExpense(id);
+        return ResponseEntity.noContent().build();
+    }
+}
